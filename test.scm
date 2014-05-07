@@ -1,3 +1,4 @@
+;composite procs
 (define consumer (lambda-consumer (bar)
   (produce (+ (car options) bar))))
 
@@ -12,12 +13,25 @@
     (consumer '(3))
     (output))
 
-(=> (consumer '(2))
-    (consumer '(3)))
+;(=> (consumer '(2))
+;    (consumer '(3)))
 
 (proc-start! composite)
 (proc-push composite 1)
 
+;thread procs
+(define thread-proc
+  (extend-proc-with-thread
+    (make-simple-proc (lambda (a options produce)
+                        (produce (+ a (car options))))
+                      (lambda (a) (write a))
+                      `(1))))
+
+(proc-start! thread-proc)
+
+(proc-push thread-proc 5)
+
+;multi-queues
 (define multi-queue (create-multi-queue 1 2 3))
 
 (queue-empty? multi-queue)

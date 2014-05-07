@@ -29,13 +29,13 @@
 
 (define (extend-proc-with-thread proc)
   (make-thread-proc
-    (make-thread (lambda ()
-                   (let loop ((data (thread-receive)))
-                     (begin
-                       ((simple-proc-consume proc) data
-                                                   (simple-proc-options proc)
-                                                   (simple-proc-consume proc))
-                       (loop (thread-receive))))))))
+    (make-thread
+      (lambda ()
+        (let loop ((data (thread-receive)))
+          ((simple-proc-consume proc) data
+                                      (simple-proc-options proc)
+                                      (simple-proc-produce proc))
+          (loop (thread-receive)))))))
 
 (define (extend-proc-with-y-comb proc size)
   (make-thread-proc
