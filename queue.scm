@@ -59,7 +59,7 @@
            (queue-empty? (cadr sub-queue)))
          (multi-queue-sub-queues queue))))
 
-(define (create-multi-queue #!rest names)
+(define (create-multi-queue . names)
   (make-multi-queue
     (map (lambda (name)
            (list name (make-queue '()))) names)))

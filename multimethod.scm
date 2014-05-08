@@ -1,6 +1,6 @@
 (define poly-fn-lookup (make-table))
 
-(define (symbol-append #!rest syms)
+(define (symbol-append . syms)
   (string->symbol (apply string-append (map symbol->string syms))))
 
 (define-macro (define-multi signature)

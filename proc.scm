@@ -69,6 +69,6 @@
         producer
         opts))))
 
-(define (-> #!rest params)
+(define (-> . params)
   (make-composite-proc
     (chain-procs params)))
