@@ -78,7 +78,7 @@
                                           (proc-push y-comb (list id data))))
                             procs)
                       (+ id 1))))))
-      (cons ((multiplexer proc-list) (lambda (data) #f))
+      (cons ((broadcaster proc-list) (lambda (data) #f))
             (cons y-comb proc-list)))))
 
 (define-macro (consumer signature #!rest body)
@@ -98,17 +98,17 @@
           producer
           opts)))))
 
-(define multiplexer (consumer (data)
+(define broadcaster (consumer (data)
   (for-each (lambda (proc)
               (proc-push proc data))
             options)))
 
-(define (-> . params)
+(define (==> . params)
   (lambda (produce)
     (make-composite-proc
       (chain-procs params produce))))
 
-(define (Y . params)
+(define (==E . params)
   (lambda (produce)
     (make-composite-proc
       (fan-procs params produce))))

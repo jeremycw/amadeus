@@ -11,16 +11,17 @@
   (produce (apply + bar))))
 
 (define flow
-  ((-> (add '(2))
-       (add '(3))
-       (Y (add '(4))
-          (add '(5))
-          (add '(6)))
-       (sum))
+  ((==> (add '(2))
+        (add '(3))
+        (==E (add '(4))
+             (add '(5))
+             (add '(6)))
+        (sum))
    (lambda (data) (display data))))
 
 (proc-start! flow)
 (proc-push flow 1)
+(proc-push flow 5)
 
 (define simple-proc
     (make-simple-proc (lambda (a options produce)
