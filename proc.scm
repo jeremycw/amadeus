@@ -37,21 +37,23 @@
                                       (simple-proc-produce proc))
           (loop (thread-receive)))))))
 
-(define (extend-proc-with-y-comb proc size)
+(define (make-y-combinator cb size)
   (make-thread-proc
-    (make-thread (lambda ()
-                   (let loop ((data (thread-receive))
-                              (queue (apply create-multi-queue (range 0 size)))
-                              (msg-count 0))
-                     (if (not (queue-empty? queue))
-                       (begin
-                         ((simple-proc-produce proc) (queue-peek queue))
-                         (loop (thread-receive) (deqeue queue)))
-                       (loop (thread-receive) queue)))))))
+    (make-thread
+      (lambda ()
+        (let loop ((queue (multi-enqueue
+                            (apply create-multi-queue
+                                   (range 0 size))
+                            (thread-receive))))
+          (if (not (queue-empty? queue))
+            (begin
+              (cb (reverse (map cadr (queue-peek queue))))
+              (loop (multi-enqueue (dequeue queue) (thread-receive))))
+            (loop (multi-enqueue queue (thread-receive)))))))))
 
-(define (chain-procs partial-procs)
+(define (chain-procs partial-procs produce)
   (let ((reversed (reverse partial-procs)))
-    (let loop ((next-proc ((car reversed) (lambda (in) #f)))
+    (let loop ((next-proc ((car reversed) produce))
                (remaining-partials (cdr reversed))
                (proc-list '()))
       (if (eq? '() remaining-partials)
@@ -61,7 +63,25 @@
               (cdr remaining-partials)
               (cons next-proc proc-list))))))
 
-(define-macro (lambda-consumer signature #!rest body)
+(define (fan-procs partial-procs produce)
+  (let ((y-comb (make-y-combinator
+                  produce
+                  (length partial-procs))))
+    (let ((proc-list
+            (let loop ((rest partial-procs)
+                       (procs '())
+                       (id 0))
+              (if (eq? rest '())
+                procs
+                (loop (cdr rest)
+                      (cons ((car rest) (lambda (data)
+                                          (proc-push y-comb (list id data))))
+                            procs)
+                      (+ id 1))))))
+      (cons ((multiplexer proc-list) (lambda (data) #f))
+            (cons y-comb proc-list)))))
+
+(define-macro (consumer signature #!rest body)
   `(lambda (#!optional opts)
     (lambda (producer)
       (make-simple-proc
@@ -69,6 +89,26 @@
         producer
         opts))))
 
+(define-macro (threaded-consumer signature #!rest body)
+  `(lambda (#!optional opts)
+    (lambda (producer)
+      (extend-proc-with-thread
+        (make-simple-proc
+          (lambda ,(append signature '(options produce)) ,@body)
+          producer
+          opts)))))
+
+(define multiplexer (consumer (data)
+  (for-each (lambda (proc)
+              (proc-push proc data))
+            options)))
+
 (define (-> . params)
-  (make-composite-proc
-    (chain-procs params)))
+  (lambda (produce)
+    (make-composite-proc
+      (chain-procs params produce))))
+
+(define (Y . params)
+  (lambda (produce)
+    (make-composite-proc
+      (fan-procs params produce))))
