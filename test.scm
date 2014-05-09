@@ -13,7 +13,7 @@
 (define flow
   ((==> (add '(2))
         (add '(3))
-        (==E (add '(4))
+        (==< (add '(4))
              (add '(5))
              (add '(6)))
         (sum))

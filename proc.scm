@@ -108,7 +108,7 @@
     (make-composite-proc
       (chain-procs params produce))))
 
-(define (==E . params)
+(define (==< . params)
   (lambda (produce)
     (make-composite-proc
       (fan-procs params produce))))
