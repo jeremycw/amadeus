@@ -4,11 +4,13 @@
 (include "proc.scm")
 
 ;composite procs
-(define add (consumer (bar)
-  (produce (+ (car options) bar))))
+(define add (consumer-fn
+  (output (+ (car options) (input)))))
 
-(define sum (consumer (bar)
-  (produce (apply + bar))))
+(define sum (consumer
+  (let loop ((data (input)))
+    (output (apply + data))
+    (loop (input)))))
 
 (define flow
   ((==> (add '(2))
@@ -22,20 +24,6 @@
 (proc-start! flow)
 (proc-push flow 1)
 (proc-push flow 5)
-
-(define simple-proc
-    (make-simple-proc (lambda (a options produce)
-                        (produce (+ a (car options))))
-                      (lambda (a) (write a))
-                      '(1)))
-
-;thread procs
-(define thread-proc
-  (extend-proc-with-thread simple-proc))
-
-(proc-start! thread-proc)
-
-(proc-push thread-proc 5)
 
 ;y-comb proc
 (define y-comb-proc (make-y-combinator (lambda (a) (write a)) 3))

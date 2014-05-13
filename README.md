@@ -4,11 +4,13 @@ Amadeus
 A library for composing applications.
 
 ```scheme
-(define add (consumer (bar)
-  (produce (+ (car options) bar))))
+(define add (consumer-fn
+  (output (+ (car options) (input)))))
 
-(define sum (consumer (bar)
-  (produce (apply + bar))))
+(define sum (consumer
+  (let loop ((data (input)))
+    (output (apply + data))
+    (loop (input)))))
 
 (define flow
   ((==> (add '(2))

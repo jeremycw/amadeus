@@ -6,9 +6,10 @@
 (define-method simple-proc (proc-start! proc) #t)
 
 (define-method simple-proc (proc-push proc data)
-  ((simple-proc-consume proc) data
+  ((simple-proc-consume proc) (lambda () data)
                               (simple-proc-options proc)
-                              (simple-proc-produce proc)))
+                              (simple-proc-produce proc)
+                              (lambda () #t)))
 
 (define-type thread-proc thread)
 
@@ -26,16 +27,6 @@
 
 (define-method composite-proc (proc-push proc data)
   (proc-push (car (composite-proc-proc-list proc)) data))
-
-(define (extend-proc-with-thread proc)
-  (make-thread-proc
-    (make-thread
-      (lambda ()
-        (let loop ((data (thread-receive)))
-          ((simple-proc-consume proc) data
-                                      (simple-proc-options proc)
-                                      (simple-proc-produce proc))
-          (loop (thread-receive)))))))
 
 (define (make-y-combinator cb size)
   (make-thread-proc
@@ -81,26 +72,30 @@
       (cons ((broadcaster proc-list) (lambda (data) #f))
             (cons y-comb proc-list)))))
 
-(define-macro (consumer signature #!rest body)
+(define-macro (consumer-fn #!rest body)
   `(lambda (#!optional opts)
     (lambda (producer)
       (make-simple-proc
-        (lambda ,(append signature '(options produce)) ,@body)
+        (lambda (input options output input-ready?) ,@body)
         producer
         opts))))
 
-(define-macro (threaded-consumer signature #!rest body)
+(define-macro (consumer #!rest body)
   `(lambda (#!optional opts)
     (lambda (producer)
-      (extend-proc-with-thread
-        (make-simple-proc
-          (lambda ,(append signature '(options produce)) ,@body)
-          producer
-          opts)))))
+      (make-thread-proc
+        (make-thread
+          (lambda ()
+            ((lambda (input options output input-ready?)
+               ,@body)
+             (lambda () (thread-receive))
+             opts
+             producer
+             (lambda () (if (thread-mailbox-next 0 #f) #t #f)))))))))
 
-(define broadcaster (consumer (data)
+(define broadcaster (consumer
   (for-each (lambda (proc)
-              (proc-push proc data))
+              (proc-push proc (input)))
             options)))
 
 (define (==> . params)
