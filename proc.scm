@@ -93,17 +93,17 @@
              producer
              (lambda () (if (thread-mailbox-next 0 #f) #t #f)))))))))
 
-(define broadcaster (consumer
+(define broadcaster (consumer-fn
   (for-each (lambda (proc)
               (proc-push proc (input)))
             options)))
 
-(define (==> . params)
+(define (--> . params)
   (lambda (produce)
     (make-composite-proc
       (chain-procs params produce))))
 
-(define (==< . params)
+(define (--< . params)
   (lambda (produce)
     (make-composite-proc
       (fan-procs params produce))))
