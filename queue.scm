@@ -3,7 +3,7 @@
 (define-multi (queue-peek queue))
 (define-multi (queue-empty? queue))
 
-(define-type queue (elements))
+(define-structure queue (elements))
 
 (define-method queue (enqueue queue thing)
   (make-queue (cons thing (queue-elements queue))))
@@ -18,7 +18,7 @@
 (define-method queue (queue-empty? queue)
   (eq? (queue-elements queue) '()))
 
-(define-type multi-queue (sub-queues))
+(define-structure multi-queue (sub-queues))
 
 (define (multi-queue-replace-sub-queues queue name-sub-queues)
   (let ((names (map car name-sub-queues)))

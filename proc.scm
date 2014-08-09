@@ -1,7 +1,7 @@
 (define-multi (proc-start! proc))
 (define-multi (proc-push proc data))
 
-(define-type simple-proc consume produce options)
+(define-structure simple-proc consume produce options)
 
 (define-method simple-proc (proc-start! proc) #t)
 
@@ -11,7 +11,7 @@
                               (simple-proc-produce proc)
                               (lambda () #t)))
 
-(define-type thread-proc thread)
+(define-structure thread-proc thread)
 
 (define-method thread-proc (proc-start! proc)
   (thread-start! (thread-proc-thread proc)))
@@ -19,7 +19,7 @@
 (define-method thread-proc (proc-push proc data)
   (thread-send (thread-proc-thread proc) data))
 
-(define-type composite-proc proc-list)
+(define-structure composite-proc proc-list)
 
 (define-method composite-proc (proc-start! proc)
   (for-each (lambda (sub-proc) (proc-start! sub-proc))
