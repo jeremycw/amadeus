@@ -8,8 +8,7 @@
 (define-method simple-proc (proc-push proc data)
   ((simple-proc-consume proc) (lambda () data)
                               (simple-proc-options proc)
-                              (simple-proc-produce proc)
-                              (lambda () #t)))
+                              (simple-proc-produce proc)))
 
 (define-structure thread-proc thread)
 
@@ -28,23 +27,9 @@
 (define-method composite-proc (proc-push proc data)
   (proc-push (car (composite-proc-proc-list proc)) data))
 
-(define (make-y-combinator cb size)
-  (make-thread-proc
-    (make-thread
-      (lambda ()
-        (let loop ((queue (multi-enqueue
-                            (apply create-multi-queue
-                                   (range 0 size))
-                            (thread-receive))))
-          (if (not (queue-empty? queue))
-            (begin
-              (cb (reverse (map cadr (queue-peek queue))))
-              (loop (multi-enqueue (dequeue queue) (thread-receive))))
-            (loop (multi-enqueue queue (thread-receive)))))))))
-
-(define (chain-procs partial-procs produce)
+(define (chain-procs partial-procs callback)
   (let ((reversed (reverse partial-procs)))
-    (let loop ((next-proc ((car reversed) produce))
+    (let loop ((next-proc ((car reversed) callback))
                (remaining-partials (cdr reversed))
                (proc-list '()))
       (if (eq? '() remaining-partials)
@@ -54,30 +39,24 @@
               (cdr remaining-partials)
               (cons next-proc proc-list))))))
 
-(define (fan-procs partial-procs produce)
-  (let ((y-comb (make-y-combinator
-                  produce
-                  (length partial-procs))))
-    (let ((proc-list
-            (let loop ((rest partial-procs)
-                       (procs '())
-                       (id 0))
-              (if (eq? rest '())
-                procs
-                (loop (cdr rest)
-                      (cons ((car rest) (lambda (data)
-                                          (proc-push y-comb (list id data))))
-                            procs)
-                      (+ id 1))))))
-      (cons ((broadcaster proc-list) (lambda (data) #f))
-            (cons y-comb proc-list)))))
+(define (fan-procs partial-procs callback)
+  (let ((proc-list
+          (let loop ((rest partial-procs)
+                     (procs '())
+                     (id 0))
+            (if (eq? rest '())
+              procs
+              (loop (cdr rest)
+                    (cons ((car rest) callback) procs)
+                    (+ id 1))))))
+    (cons ((broadcaster proc-list) (lambda (data) #f)) proc-list)))
 
 (define-macro (consumer-fn #!rest body)
   `(lambda (#!optional opts)
-    (lambda (producer)
+    (lambda (callback)
       (make-simple-proc
-        (lambda (input options output input-ready?) ,@body)
-        producer
+        (lambda (input options output) ,@body)
+        callback
         opts))))
 
 (define-macro (consumer #!rest body)
@@ -86,12 +65,11 @@
       (make-thread-proc
         (make-thread
           (lambda ()
-            ((lambda (input options output input-ready?)
+            ((lambda (input options output)
                ,@body)
              (lambda () (thread-receive))
              opts
-             producer
-             (lambda () (if (thread-mailbox-next 0 #f) #t #f)))))))))
+             producer)))))))
 
 (define broadcaster (consumer-fn
   (for-each (lambda (proc)
@@ -99,11 +77,11 @@
             options)))
 
 (define (--> . params)
-  (lambda (produce)
+  (lambda (callback)
     (make-composite-proc
-      (chain-procs params produce))))
+      (chain-procs params callback))))
 
 (define (--< . params)
-  (lambda (produce)
+  (lambda (callback)
     (make-composite-proc
-      (fan-procs params produce))))
+      (fan-procs params callback))))
