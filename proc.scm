@@ -1,3 +1,6 @@
+(##include "multimethod#.scm")
+(##include "proc#.scm")
+
 (define-multi (proc-start! proc))
 (define-multi (proc-push proc data))
 
@@ -49,29 +52,9 @@
               (loop (cdr rest)
                     (cons ((car rest) callback) procs)
                     (+ id 1))))))
-    (cons ((broadcaster proc-list) (lambda (data) #f)) proc-list)))
+    (cons ((apply broadcaster proc-list) (lambda (data) #f)) proc-list)))
 
-(define-macro (consumer-fn #!rest body)
-  `(lambda (#!optional opts)
-    (lambda (callback)
-      (make-simple-proc
-        (lambda (input options output) ,@body)
-        callback
-        opts))))
-
-(define-macro (consumer #!rest body)
-  `(lambda (#!optional opts)
-    (lambda (producer)
-      (make-thread-proc
-        (make-thread
-          (lambda ()
-            ((lambda (input options output)
-               ,@body)
-             (lambda () (thread-receive))
-             opts
-             producer)))))))
-
-(define broadcaster (consumer-fn
+(define broadcaster (sync-consumer
   (for-each (lambda (proc)
               (proc-push proc (input)))
             options)))

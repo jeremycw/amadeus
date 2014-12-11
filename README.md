@@ -4,24 +4,24 @@ Amadeus
 A library for composing applications.
 
 ```scheme
-(define add (consumer-fn
+(define add (sync-consumer
   (output (+ (car options) (input)))))
 
-(define sum (consumer
-  (let loop ((data (input)))
-    (output (apply + data))
-    (loop (input)))))
+(define acc (async-consumer
+  (let loop ((data (input)) (a 0))
+    (output (+ a data))
+    (loop (input) (+ a data)))))
 
 (define flow
-  ((--> (add '(2))
-        (add '(3))
-        (--< (add '(4))
-             (add '(5))
-             (add '(6)))
-        (sum))
-   (lambda (data) data)))
+  ((--> (add 2)
+        (add 3)
+        (--< (--> (add 4) (add 7))
+             (add 5)
+             (add 6))
+        (acc))
+   display))
 
 (proc-start! flow)
-(proc-push flow 1) ;=> 33
-(proc-push flow 5) ;=> 45
+(proc-push flow 1) ;=> 12 23 40
+(proc-push flow 5) ;=> 56 71 92
 ```
