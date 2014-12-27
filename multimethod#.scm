@@ -6,7 +6,7 @@
                                          (quote ,(car signature)))))))
      ,(cons '(cdr pair) (cdr signature)))))
 
-(define-macro (define-method type signature . body)
+(define-macro (define-method type signature #!rest body)
   `(define-poly (quote ,(car signature))
                 ,(string->symbol (apply string-append
                                         (map symbol->string (list type '?))))
