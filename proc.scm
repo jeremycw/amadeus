@@ -68,3 +68,6 @@
   (lambda (callback)
     (make-composite-proc
       (fan-procs params callback))))
+
+(define (stream stream-decl callback)
+  (stream-decl callback))

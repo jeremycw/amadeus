@@ -1,4 +1,4 @@
-(define-macro (sync-consumer #!rest body)
+(define-macro (sync-consumer . body)
   `(lambda opts
     (lambda (callback)
       (make-simple-proc
@@ -6,7 +6,7 @@
         callback
         opts))))
 
-(define-macro (async-consumer #!rest body)
+(define-macro (async-consumer . body)
   `(lambda opts
     (lambda (callback)
       (make-thread-proc
