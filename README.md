@@ -12,16 +12,17 @@ A library for composing applications.
     (output (+ a data))
     (loop (input) (+ a data)))))
 
-(define flow
-  ((--> (add 2)
-        (add 3)
-        (--< (--> (add 4) (add 7))
-             (add 5)
-             (add 6))
-        (acc))
-   display))
+(define add-stream
+  (stream
+    (--> (add 2)
+         (add 3)
+         (--< (--> (add 4) (add 7))
+              (add 5)
+              (add 6))
+         (acc))
+    display))
 
-(proc-start! flow)
+(proc-start! add-stream)
 (proc-push flow 1) ;=> 12 23 40
 (proc-push flow 5) ;=> 56 71 92
 ```
