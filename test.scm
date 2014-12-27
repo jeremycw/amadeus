@@ -24,5 +24,5 @@
     display))
 
 (proc-start! add-stream)
-(proc-push flow 1) ;=> 12 23 40
-(proc-push flow 5) ;=> 56 71 92
+(proc-push add-stream 1) ;=> 12 23 40
+(proc-push add-stream 5) ;=> 56 71 92
