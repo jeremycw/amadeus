@@ -4,10 +4,10 @@ Amadeus
 A library for composing applications.
 
 ```scheme
-(define add (sync-consumer
-  (output (+ (car options) (input)))))
+(define add (sync-consumer (num)
+  (output (+ num (input)))))
 
-(define acc (async-consumer
+(define acc (async-consumer ()
   (let loop ((data (input)) (a 0))
     (output (+ a data))
     (loop (input) (+ a data)))))
