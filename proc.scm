@@ -1,17 +1,18 @@
-(##include "multimethod#.scm")
-(##include "proc#.scm")
+(include "multimethod#.scm")
+(include "proc#.scm")
+(include "util#.scm")
 
-(define-multi (proc-start! proc))
-(define-multi (proc-push proc data))
+(define-protocol (proc-start! proc))
+(define-protocol (proc-push proc data))
 
 (define-structure simple-proc consume produce options)
 
 (define-method simple-proc (proc-start! proc) #t)
 
 (define-method simple-proc (proc-push proc data)
-  ((simple-proc-consume proc) (lambda () data)
-                              (simple-proc-options proc)
-                              (simple-proc-produce proc)))
+  (apply (simple-proc-consume proc) (->> (simple-proc-options proc)
+                                         (cons (simple-proc-produce proc))
+                                         (cons (lambda () data)))))
 
 (define-structure thread-proc thread)
 
@@ -54,7 +55,7 @@
                     (+ id 1))))))
     (cons ((apply broadcaster proc-list) (lambda (data) #f)) proc-list)))
 
-(define broadcaster (sync-consumer
+(define broadcaster (sync-consumer options
   (for-each (lambda (proc)
               (proc-push proc (input)))
             options)))

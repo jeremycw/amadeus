@@ -1,4 +1,4 @@
-(define-macro (define-multi signature)
+(define-macro (define-protocol signature)
   `(define ,signature
      (let ((pair (car (filter (lambda (pair)
                                 ((car pair) ,(list-ref signature 1)))
