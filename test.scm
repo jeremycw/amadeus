@@ -11,6 +11,9 @@
 (define add-stream
   (stream
     (--> (add 2)
+         (if_ (λ(> %1 5))
+           (--> (add 3) (add 6))
+           (--> (add 4) (add 7)))
          (add 3)
          (--< (--> (add 4) (add 7))
               (add 5)

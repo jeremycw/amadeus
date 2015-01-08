@@ -60,6 +60,18 @@
               (proc-push proc (input)))
             options)))
 
+(define cond-pusher (sync-consumer (cmp-fn proc-a proc-b)
+  (if (eq? (cmp-fn (input)) #t)
+    (proc-push proc-a (input))
+    (proc-push proc-b (input)))))
+
+(define (if_ cmp-fn branch-a branch-b)
+  (lambda (callback)
+    (let* ((proc-a (branch-a callback))
+           (proc-b (branch-b callback))
+           (cond-proc ((cond-pusher cmp-fn proc-a proc-b) (lambda (data) #f))))
+      (make-composite-proc (list cond-proc proc-a proc-b)))))
+
 (define (--> . params)
   (lambda (callback)
     (make-composite-proc
