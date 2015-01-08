@@ -32,5 +32,5 @@
                        (string-append "%" (number->string count)))))
            (if (find-recursive term body)
              (loop (+ count 1) (cons term args))
-             `(lambda (,@args) ,@body))))))
+             `(lambda (,@(reverse args)) ,@body))))))
 
