@@ -15,9 +15,14 @@ A library for composing applications.
 (define add-stream
   (stream
     (--> (add 2)
-         (if_ (λ(> %1 5))
+         (if> (λ(> %1 5))
            (--> (add 3) (add 6))
            (--> (add 4) (add 7)))
+         (cond> (λ(> %1 5)) (--> (add 3) (add 6))
+                (λ(> %1 3)) (--> (add 4) (add 7))
+                (add 1))
+         (while> (λ(< %1 20))
+           (--> (add 1) (add 2)))
          (add 3)
          (--< (--> (add 4) (add 7))
               (add 5)

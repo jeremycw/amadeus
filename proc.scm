@@ -60,17 +60,63 @@
               (proc-push proc (input)))
             options)))
 
-(define cond-pusher (sync-consumer (cmp-fn proc-a proc-b)
+(define if-pusher (sync-consumer (cmp-fn proc-a proc-b)
   (if (eq? (cmp-fn (input)) #t)
     (proc-push proc-a (input))
     (proc-push proc-b (input)))))
 
-(define (if_ cmp-fn branch-a branch-b)
+(define cond-pusher (sync-consumer (cond-list)
+  (let loop ((cond-list cond-list))
+    (cond 
+      ((eq? cond-list '()) #f)
+      ((eq? (cdr cond-list) '()) (proc-push (car cond-list) (input)))
+      (((car cond-list) (input)) (proc-push (cadr cond-list) (input)))
+      (else (loop (cddr cond-list)))))))
+
+(define (if> cmp-fn branch-a branch-b)
   (lambda (callback)
     (let* ((proc-a (branch-a callback))
            (proc-b (branch-b callback))
-           (cond-proc ((cond-pusher cmp-fn proc-a proc-b) (lambda (data) #f))))
-      (make-composite-proc (list cond-proc proc-a proc-b)))))
+           (if-proc ((if-pusher cmp-fn proc-a proc-b) (lambda (data) #f))))
+      (make-composite-proc (list if-proc proc-a proc-b)))))
+
+(define (cond> . params)
+  (lambda (callback)
+    (let loop ((proc-list '())
+               (params params)
+               (cond-list '()))
+      (cond
+        ((eq? params '())
+          (make-composite-proc
+            (cons ((cond-pusher (reverse cond-list)) (lambda (data) #f))
+                  proc-list)))
+        ((eq? (cdr params) '())
+          (let* ((proc ((car params) callback))
+                 (cond-list (cons proc cond-list))
+                 (proc-list (cons proc proc-list)))
+            (make-composite-proc
+              (cons ((cond-pusher (reverse cond-list)) (lambda (data) #f))
+                    proc-list))))
+        (else
+          (let ((proc ((cadr params) callback))
+                (condition (car params)))
+            (loop (cons proc proc-list)
+                  (cddr params)
+                  (->> cond-list
+                       (cons condition)
+                       (cons proc)))))))))
+
+(define (while> condition proc-def)
+  (lambda (callback)
+    (let* ((while-csmr (lambda (input exit-loop enter-loop condition)
+                         (if (condition (input))
+                           (enter-loop (input))
+                           (exit-loop (input)))))
+           (while-proc (make-simple-proc while-csmr callback #f))
+           (loop-body (proc-def (lambda (data) (proc-push while-proc data))))
+           (loop-fn (lambda (data) (proc-push loop-body data))))
+      (simple-proc-options-set! while-proc (list loop-fn condition))
+      (make-composite-proc (list while-proc loop-body)))))
 
 (define (--> . params)
   (lambda (callback)
