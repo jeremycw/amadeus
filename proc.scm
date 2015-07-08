@@ -1,3 +1,5 @@
+(declare (standard-bindings) (extended-bindings) (block) (not safe))
+
 (include "multimethod#.scm")
 (include "proc#.scm")
 (include "util#.scm")

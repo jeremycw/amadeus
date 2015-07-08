@@ -1,3 +1,5 @@
+(declare (standard-bindings) (extended-bindings) (block) (not safe))
+
 (define poly-fn-lookup (make-table))
 
 (define (define-poly fn-name type-check-fn implementation)
